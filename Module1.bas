@@ -1,23 +1,75 @@
 Option Explicit
 Private Const barId As String = "Winand's Tools"
 
+Public Sub save_selected(filepath)
+    ' Export selected slides to `filepath`
+    Dim sl, sel_ids, pr, cur_idx, del_idc() As Long
+    Set sel_ids = CreateObject("Scripting.Dictionary")
+    For Each sl In selectedSlides
+        Set sel_ids(sl.SlideID) = sl
+    Next sl
+
+    ActivePresentation.SaveCopyAs filepath
+    Set pr = Presentations.Open(filepath, WithWindow:=False)
+    If ActivePresentation.Slides.Count - sel_ids.Count > 0 Then
+        ReDim del_idc(1 To ActivePresentation.Slides.Count - sel_ids.Count)
+        
+        For Each sl In pr.Slides
+            If Not sel_ids.exists(sl.SlideID) Then
+                cur_idx = cur_idx + 1
+                del_idc(cur_idx) = sl.SlideIndex
+            End If
+        Next sl
+        pr.Slides.Range(del_idc).Delete
+    End If
+    Call remove_unused_designs__internal(pr)
+    pr.Save
+    pr.Close
+End Sub
+
+Private Function generate_temp_path() As String
+    ' Generate path to save active presentation in temp folder
+    Dim file_name As String
+    file_name = ActivePresentation.Name & IIf(ActivePresentation.Path = "", ".pptx", "")
+    generate_temp_path = Environ("Temp") & "\" & file_name
+End Function
+
+Private Sub new_outlook_msg(subject, attachment_path)
+    ' Create and display new Outlook message
+    ' with `subject` and attach file `attachment_path`
+    Dim objMsg, app
+    Const olMailItem = 0
+    Set app = CreateObject("Outlook.Application")
+    Set objMsg = app.CreateItem(olMailItem)
+    objMsg.subject = subject
+    objMsg.Attachments.Add attachment_path
+    objMsg.Display
+    AppActivate app.ActiveInspector.Caption ' Bring message to front
+End Sub
+
+Public Sub send_selected_via_outlook()
+    ' Creates new Outlook message and attaches selected slides from active presentation
+    Dim tmp_file_path
+    tmp_file_path = generate_temp_path
+    save_selected tmp_file_path
+    
+    On Error GoTo send__outlook_error:
+    new_outlook_msg subject:=ActivePresentation.Name, attachment_path:=tmp_file_path
+
+send__outlook_error:
+    If Err.Number <> 0 Then MsgBox Err.Description, vbExclamation
+    Kill tmp_file_path
+End Sub
+
 Public Sub send_via_outlook()
     ' Creates new Outlook message and attaches active presentation
-    Dim objMsg, app, tmp_file_path, file_name
-    Const olMailItem = 0
-    
-    file_name = ActivePresentation.Name & IIf(ActivePresentation.Path = "", ".pptx", "")
-    tmp_file_path = Environ("Temp") & "\" & file_name
+    Dim tmp_file_path
+    tmp_file_path = generate_temp_path
     ActivePresentation.SaveCopyAs tmp_file_path
 
     On Error GoTo send__outlook_error:
-    Set app = CreateObject("Outlook.Application")
-    Set objMsg = app.CreateItem(olMailItem)
-    objMsg.Subject = ActivePresentation.Name
-    objMsg.Attachments.Add tmp_file_path
-    objMsg.Display
-    AppActivate app.ActiveInspector.Caption ' Bring message to front
-    
+    new_outlook_msg subject:=ActivePresentation.Name, attachment_path:=tmp_file_path
+
 send__outlook_error:
     If Err.Number <> 0 Then MsgBox Err.Description, vbExclamation
     Kill tmp_file_path
@@ -38,13 +90,16 @@ Function get_used_layouts()
     Set get_used_layouts = used_layouts
 End Function
 
-Sub remove_unused_designs()
+Private Function remove_unused_designs__internal(pr)
+    ' Remove unused designs and layouts in `pr` presentation
+    ' Return number of unused designs and unused layouts within used designs
+    ' Returns Array(removed_designs, removed_layouts)
     Dim used_layouts, d, l
     Dim removed As Long, removed_d As Long
     Dim col As New Collection
 
     Set used_layouts = get_used_layouts()
-    For Each d In ActivePresentation.Designs
+    For Each d In pr.Designs
         If Not used_layouts.exists(d.Name) Then
             col.Add d
             removed_d = removed_d + 1
@@ -54,7 +109,7 @@ Sub remove_unused_designs()
         d.Delete
     Next d
     Set col = New Collection
-    For Each d In ActivePresentation.Designs
+    For Each d In pr.Designs
         For Each l In d.SlideMaster.CustomLayouts
             If Not used_layouts.exists(d.Name & vbNullChar & l.Name) Then
                 col.Add l
@@ -65,8 +120,14 @@ Sub remove_unused_designs()
     For Each l In col
         l.Delete
     Next l
-    MsgBox "Удалено неиспользуемых тем (с образцами слайдов): " & removed_d & vbCrLf & _
-           "Удалено неиспользуемых образцов слайдов: " & removed, vbInformation
+    remove_unused_designs__internal = Array(removed_d, removed)
+End Function
+
+Sub remove_unused_designs()
+    Dim result
+    result = remove_unused_designs__internal(ActivePresentation)
+    MsgBox "Удалено неиспользуемых тем (с образцами слайдов): " & result(0) & vbCrLf & _
+           "Удалено неиспользуемых образцов слайдов: " & result(1), vbInformation
 End Sub
 
 Function chartTemplatesFolder() As String
