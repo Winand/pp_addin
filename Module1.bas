@@ -64,16 +64,28 @@ End Sub
 Public Sub send_via_outlook()
     ' Creates new Outlook message and attaches active presentation
     Dim tmp_file_path
-    tmp_file_path = generate_temp_path
-    ActivePresentation.SaveCopyAs tmp_file_path
-
+    If is_saved_to_disk(ActivePresentation) Then 'actual state is already saved
+        tmp_file_path = ActivePresentation.FullName
+    Else
+        tmp_file_path = generate_temp_path
+        ActivePresentation.SaveCopyAs tmp_file_path
+    End If
     On Error GoTo send__outlook_error:
     new_outlook_msg subject:=ActivePresentation.Name, attachment_path:=tmp_file_path
 
 send__outlook_error:
     If Err.Number <> 0 Then MsgBox Err.Description, vbExclamation
-    Kill tmp_file_path
+    If tmp_file_path <> ActivePresentation.FullName Then
+        ' Delete file if it's not main presentation file
+        Kill tmp_file_path
+    End If
 End Sub
+
+Public Function is_saved_to_disk(pr) As Boolean
+    ' Check if actual state of presentation `pr` is saved to disk because
+    ' `Saved` property returns True for new unchanged presentations
+    If pr.Path <> "" And pr.Saved Then is_saved_to_disk = True
+End Function
 
 Function get_used_layouts()
     ' Returns designs and layouts as a Dictionary:
