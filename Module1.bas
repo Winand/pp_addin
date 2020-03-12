@@ -50,6 +50,7 @@ End Sub
 Public Sub send_selected_via_outlook()
     ' Creates new Outlook message and attaches selected slides from active presentation
     Dim tmp_file_path
+    If is_protected_view Then Exit Sub
     tmp_file_path = generate_temp_path
     save_selected tmp_file_path
     
@@ -64,6 +65,7 @@ End Sub
 Public Sub send_via_outlook()
     ' Creates new Outlook message and attaches active presentation
     Dim tmp_file_path
+    If is_protected_view Then Exit Sub
     If is_saved_to_disk(ActivePresentation) Then 'actual state is already saved
         tmp_file_path = ActivePresentation.FullName
     Else
@@ -80,6 +82,16 @@ send__outlook_error:
         Kill tmp_file_path
     End If
 End Sub
+
+Function is_protected_view() As Boolean
+    ' Check if currently opened window is protected view window
+    Dim tmp
+    On Error GoTo err__is_protected_view:
+    Set tmp = ActiveWindow
+err__is_protected_view:
+    ' In protected view `ActiveProtectedViewWindow` is used instead of `ActiveWindow`
+    is_protected_view = IIf(Err.Number = &H80048240, True, False)
+End Function
 
 Public Function is_saved_to_disk(pr) As Boolean
     ' Check if actual state of presentation `pr` is saved to disk because
@@ -137,6 +149,7 @@ End Function
 
 Sub remove_unused_designs()
     Dim result
+    If is_protected_view Then Exit Sub
     result = remove_unused_designs__internal(ActivePresentation)
     MsgBox "Удалено неиспользуемых тем (с образцами слайдов): " & result(0) & vbCrLf & _
            "Удалено неиспользуемых образцов слайдов: " & result(1), vbInformation
@@ -237,6 +250,7 @@ Sub chartDataRecover()
     Dim isl As slide, j As shape, ch As Chart, ch2 As Chart, k As Long, charts As New Collection, ws As Object
     Dim ls As Long, i, o1, o2, left_shift As Long
     
+    If is_protected_view Then Exit Sub
     For Each isl In selectedSlides
         For Each j In isl.Shapes
             If j.Type = msoChart And _
@@ -338,6 +352,7 @@ End Sub
 Sub chartBreakLinks()
 On Error GoTo er:
     Dim i As shape
+    If is_protected_view Then Exit Sub
     For Each i In ActiveWindow.Selection.ShapeRange
         i.LinkFormat.BreakLink
     Next i
