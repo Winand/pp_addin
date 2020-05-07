@@ -99,12 +99,12 @@ Public Function is_saved_to_disk(pr) As Boolean
     If pr.Path <> "" And pr.Saved Then is_saved_to_disk = True
 End Function
 
-Function get_used_layouts()
-    ' Returns designs and layouts as a Dictionary:
+Function get_used_layouts(pr)
+    ' Returns used designs and layouts in a presentation `pr` as a Dictionary:
     ' Design1->number_of_users, Design1{null_char}Layout1->number_of_users, etc.
     Dim used_layouts, layout, sl, l_name, i
     Set used_layouts = CreateObject("Scripting.Dictionary")
-    For Each sl In ActivePresentation.Slides
+    For Each sl In pr.Slides
         Set layout = sl.CustomLayout
         l_name = layout.Design.Name
         used_layouts(l_name) = used_layouts(l_name) + 1
@@ -122,7 +122,7 @@ Private Function remove_unused_designs__internal(pr)
     Dim removed As Long, removed_d As Long
     Dim col As New Collection
 
-    Set used_layouts = get_used_layouts()
+    Set used_layouts = get_used_layouts(pr)
     For Each d In pr.Designs
         If Not used_layouts.exists(d.Name) Then
             col.Add d
