@@ -203,15 +203,16 @@ End Function
 
 Sub copyPos(o1, o2, Optional resize As Boolean = True)
     'Set global (in slide coordinates) position of /o2/ to /o1/
-    Dim top As Long, left As Long
+    Dim top As Long, left As Long, o_tmp
     If resize Then
         o2.Width = o1.Width
         o2.Height = o1.Height
     End If
-    While TypeName(o1) <> "Slide"
-        left = left + o1.left
-        top = top + o1.top
-        Set o1 = o1.Parent
+    Set o_tmp = o1
+    While TypeName(o_tmp) <> "Slide"
+        left = left + o_tmp.left
+        top = top + o_tmp.top
+        Set o_tmp = o_tmp.Parent
     Wend
     o2.left = left
     o2.top = top
@@ -358,4 +359,32 @@ On Error GoTo er:
     Next i
 er:
 If Err.Number Then Debug.Print Err.Description
+End Sub
+
+Sub paste_and_replace_shape()
+' Заменяет выделенную диаграмму диаграммой из буфера обмена,
+' сохраняя положение и ZOrder
+' FIXME: не поддерживаются (не тестировалось) вложенные объекты
+On Error GoTo err__paste_and_replace_shape:
+    Dim sel As Selection, rng As ShapeRange, old_obj As Shape, new_obj As Shape
+    Set sel = ActiveWindow.Selection
+    If Not (sel.Type = ppSelectionShapes Or sel.Type = ppSelectionText) Then _
+        Err.Raise -1, , "Выберите одну диаграмму"
+    Set old_obj = sel.ShapeRange(1)
+    If sel.ShapeRange.Count > 1 Or Not old_obj.HasChart Then _
+        Err.Raise -1, , "Выберите одну диаграмму"
+    Set rng = ActiveWindow.View.slide.shapes.Paste
+    Set new_obj = rng(1)
+    If rng.Count > 1 Or Not new_obj.HasChart Then
+        rng.Delete
+        old_obj.Select 'If text is pasted focus is set on it
+        Err.Raise -1, , "В буфере обмена должна находиться одна диаграмма"
+    End If
+    copyPos old_obj, new_obj
+    setZOrder new_obj, old_obj.ZOrderPosition
+    old_obj.Delete
+    new_obj.Select
+Exit Sub
+err__paste_and_replace_shape:
+    MsgBox Err.Description, vbExclamation
 End Sub

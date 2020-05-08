@@ -58,6 +58,12 @@ Sub Auto_Open()
     b.Style = msoButtonIconAndCaption
     b.FaceId = 24
 
+    Set b = bar.Controls.Add(msoControlButton)
+    b.Caption = "Вставить с заменой"
+    b.OnAction = project_name & "!paste_and_replace_shape"
+    b.Style = msoButtonIconAndCaption
+    b.FaceId = 4873
+
     bar.Visible = True
 End Sub
 
