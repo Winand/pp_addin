@@ -64,6 +64,13 @@ End Sub
 
 Public Sub send_via_outlook()
     ' Creates new Outlook message and attaches active presentation
+    ' If slide thumbnails are selected calls `send_selected_via_outlook`
+    If ActiveWindow.Selection.Type = ppSelectionSlides Then
+        MsgBox "Будут отправлены выделенные слайды: " & _
+            ActiveWindow.Selection.SlideRange.Count, vbInformation
+        Call send_selected_via_outlook
+        Exit Sub
+    End If
     Dim tmp_file_path
     If is_protected_view Then Exit Sub
     If is_saved_to_disk(ActivePresentation) Then 'actual state is already saved

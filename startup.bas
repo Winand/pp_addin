@@ -45,12 +45,12 @@ Sub Auto_Open()
     b.Style = msoButtonIconAndCaption
     b.FaceId = 47
 
-    ' Attach selected slides to Outlook message and remove unused layouts
-    Set b = bar.Controls.Add(msoControlButton)
-    b.Caption = "Отправить выбранное"
-    b.OnAction = project_name & "!send_selected_via_outlook"
-    b.Style = msoButtonIconAndCaption
-    b.FaceId = 24
+'    ' Attach selected slides to Outlook message and remove unused layouts
+'    Set b = bar.Controls.Add(msoControlButton)
+'    b.Caption = "Отправить выбранное"
+'    b.OnAction = project_name & "!send_selected_via_outlook"
+'    b.Style = msoButtonIconAndCaption
+'    b.FaceId = 24
 
     Set b = bar.Controls.Add(msoControlButton)
     b.Caption = "Отправить"
