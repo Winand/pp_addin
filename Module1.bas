@@ -361,24 +361,63 @@ er:
 If Err.Number Then Debug.Print Err.Description
 End Sub
 
+Function selected_shapes() As ShapeRange
+'Get selected shapes or empty `ShapeRange`
+On Error GoTo err__selected_shapes:
+    Dim sel As Selection
+    Set sel = ActiveWindow.Selection
+    'Do not rely on sel.Type, 'cause ppSelectionText can be set when
+    'text in a selected shape is being edited and in slide notes too
+    Set selected_shapes = sel.ShapeRange
+Exit Function
+err__selected_shapes: 'Return zero length range
+    Set selected_shapes = ActiveWindow.View.slide.Shapes.Range(0)
+End Function
+
+Function paste_source_formatting() As ShapeRange
+'Pastes data with source formatting. Works with charts and tables
+On Error GoTo err__paste_source_formatting:
+    Dim old_sel As ShapeRange, old_shape_count As Long, new_shape_count As Long
+    Dim slide_shapes As Shapes, arr, i As Long
+    Set slide_shapes = ActiveWindow.View.slide.Shapes
+    old_shape_count = slide_shapes.Count
+    Set old_sel = selected_shapes()
+    'Multiple charts fail to be pasted if a chart is selected on a slide
+    If old_sel.Count Then ActiveWindow.Selection.Unselect
+    'PasteExcelTableSourceFormatting, PasteExcelChartSourceFormatting, PasteSourceFormatting
+    CommandBars.ExecuteMso "PasteSourceFormatting"
+    DoEvents 'Wait for `ExecuteMso` result
+    new_shape_count = slide_shapes.Count
+    ReDim arr(1 To new_shape_count - old_shape_count) As Long
+    For i = old_shape_count + 1 To new_shape_count
+        arr(i - old_shape_count) = i
+    Next i
+    Set paste_source_formatting = slide_shapes.Range(arr)
+    old_sel.Select 'Restore selection
+Exit Function
+err__paste_source_formatting: 'Return zero length range
+    Debug.Print "paste_source_formatting err:", Err.Description
+    Set paste_source_formatting = slide_shapes.Range(0)
+End Function
+
 Sub paste_and_replace_shape()
-' Заменяет выделенную диаграмму диаграммой из буфера обмена,
+' Заменяет выделенный объект объектом из буфера обмена,
 ' сохраняя положение и ZOrder
 ' FIXME: не поддерживаются (не тестировалось) вложенные объекты
 On Error GoTo err__paste_and_replace_shape:
-    Dim sel As Selection, rng As ShapeRange, old_obj As Shape, new_obj As Shape
-    Set sel = ActiveWindow.Selection
-    If Not (sel.Type = ppSelectionShapes Or sel.Type = ppSelectionText) Then _
-        Err.Raise -1, , "Выберите одну диаграмму"
-    Set old_obj = sel.ShapeRange(1)
-    If sel.ShapeRange.Count > 1 Or Not old_obj.HasChart Then _
-        Err.Raise -1, , "Выберите одну диаграмму"
-    Set rng = ActiveWindow.View.slide.shapes.Paste
+    Dim rng As ShapeRange, old_obj As Shape, new_obj As Shape
+    Set rng = selected_shapes()
+    If rng.Count <> 1 Then _
+        Err.Raise -1, , "Выберите один объект на слайде"
+    Set old_obj = rng(1)
+    Set rng = paste_source_formatting()
+    If rng.Count = 0 Then _
+        Set rng = ActiveWindow.View.slide.Shapes.Paste 'fallback
     Set new_obj = rng(1)
-    If rng.Count > 1 Or Not new_obj.HasChart Then
+    If rng.Count > 1 Then
         rng.Delete
         old_obj.Select 'If text is pasted focus is set on it
-        Err.Raise -1, , "В буфере обмена должна находиться одна диаграмма"
+        Err.Raise -1, , "В буфере обмена должен находиться один объект"
     End If
     copyPos old_obj, new_obj
     setZOrder new_obj, old_obj.ZOrderPosition
