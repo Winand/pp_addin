@@ -175,13 +175,29 @@ Exit Function
 er:
 End Function
 
+Private Function zorder_reached(new_z, target_z, direction As MsoZOrderCmd) As Long
+    'Check if target ZOrder has been reached or passed already
+    'Returns:
+    '* True or -1 (reached), False or 0 (not yet reached),
+    '* msoSendBackward, msoBringForward (passed already, change direction and step back)
+    If new_z = target_z Then
+        zorder_reached = True
+    ElseIf direction = msoBringForward And new_z > target_z Then
+        zorder_reached = msoSendBackward
+    ElseIf direction = msoSendBackward And new_z < target_z Then
+        zorder_reached = msoBringForward
+    End If
+End Function
+
 Sub setZOrder(obj, pos)
     'Move object to specified ZOrder /pos/
     Dim direction As Long
     direction = IIf(obj.ZOrderPosition < pos, msoBringForward, msoSendBackward)
-    While obj.ZOrderPosition <> pos
+    While zorder_reached(obj.ZOrderPosition, pos, direction) = False
         obj.ZOrder direction
     Wend
+    direction = zorder_reached(obj.ZOrderPosition, pos, direction)
+    if direction <> True then obj.ZOrder direction 'one step back
 End Sub
 
 Function hasTitle(obj) As Boolean
@@ -380,7 +396,11 @@ On Error GoTo err__selected_shapes:
     Set sel = ActiveWindow.Selection
     'Do not rely on sel.Type, 'cause ppSelectionText can be set when
     'text in a selected shape is being edited and in slide notes too
-    Set selected_shapes = sel.ShapeRange
+    If sel.HasChildShapeRange Then
+        Set selected_shapes = sel.ChildShapeRange 'Shapes inside a group
+    Else
+        Set selected_shapes = sel.ShapeRange
+    End If
     If selected_shapes.Count = 0 Then
         embedded_sel = True 'Warning: an object inside a chart is selected
         Err.Raise -1
