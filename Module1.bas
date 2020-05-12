@@ -66,10 +66,11 @@ Public Sub send_via_outlook()
     ' Creates new Outlook message and attaches active presentation
     ' If slide thumbnails are selected (not all) calls `send_selected_via_outlook`
     If ActiveWindow.Selection.Type = ppSelectionSlides Then
-        Dim cnt As Long
-        cnt = ActiveWindow.Selection.SlideRange.Count
-        If cnt < ActiveWindow.Presentation.Slides.Count Then
-            If MsgBox("Будут отправлены выделенные слайды: " & cnt, _
+        Dim slide_rng As SlideRange
+        Set slide_rng = ActiveWindow.Selection.SlideRange
+        If slide_rng.Count < ActiveWindow.Presentation.Slides.Count Then
+            If MsgBox("Будут отправлены выделенные слайды (" & _
+                      slide_rng.Count & "):" & vbCrLf & to_text_range(slide_rng), _
                       vbInformation + vbOKCancel) = vbOK Then _
                 Call send_selected_via_outlook
             Exit Sub
@@ -93,6 +94,30 @@ send__outlook_error:
         Kill tmp_file_path
     End If
 End Sub
+
+Private Function to_text_range(slide_rng As SlideRange) As String
+    'Converts slide range to text: "1-3,5,8-13"
+    Dim arr, i, prev As Long, rng_started As Boolean
+    Set arr = CreateObject("System.Collections.ArrayList")
+    For Each i In slide_rng
+        arr.Add i.SlideNumber
+    Next i
+    arr.Sort
+    For i = 0 To arr.Count - 1
+        If i = 0 Then
+            to_text_range = arr(i)
+        ElseIf arr(i) - prev = 1 Then
+            If Not rng_started Then to_text_range = to_text_range & "-"
+            rng_started = True
+        Else
+            If rng_started Then to_text_range = to_text_range & prev
+            to_text_range = to_text_range & ", " & arr(i)
+            rng_started = False
+        End If
+        prev = arr(i)
+    Next i
+    If rng_started Then to_text_range = to_text_range & prev
+End Function
 
 Function is_protected_view() As Boolean
     ' Check if currently opened window is protected view window
