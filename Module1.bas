@@ -371,14 +371,22 @@ er:
 If Err.Number Then Debug.Print Err.Description
 End Sub
 
-Function selected_shapes() As ShapeRange
+Function selected_shapes(Optional ByRef embedded_sel) As ShapeRange
 'Get selected shapes or empty `ShapeRange`
+'`embedded_sel` flag can be set if shapes inside a chart are selected.
+'               Zero-len ShapeRange is returned then.
 On Error GoTo err__selected_shapes:
     Dim sel As Selection
     Set sel = ActiveWindow.Selection
     'Do not rely on sel.Type, 'cause ppSelectionText can be set when
     'text in a selected shape is being edited and in slide notes too
     Set selected_shapes = sel.ShapeRange
+    If selected_shapes.Count = 0 Then
+        embedded_sel = True 'Warning: an object inside a chart is selected
+        Err.Raise -1
+    Else
+        embedded_sel = False
+    End If
 Exit Function
 err__selected_shapes: 'Return zero length range
     Set selected_shapes = ActiveWindow.View.slide.Shapes.Range(0)
@@ -415,8 +423,10 @@ Sub paste_and_replace_shape()
 ' сохраняя положение и ZOrder
 ' FIXME: не поддерживаются (не тестировалось) вложенные объекты
 On Error GoTo err__paste_and_replace_shape:
-    Dim rng As ShapeRange, old_obj As Shape, new_obj As Shape
-    Set rng = selected_shapes()
+    Dim rng As ShapeRange, old_obj As Shape, new_obj As Shape, is_emb_selection As Boolean
+    Set rng = selected_shapes(is_emb_selection)
+    If is_emb_selection Then _
+        Err.Raise -1, , "Не удалось определить выделение: объекты внутри диаграмм не поддерживаются"
     If rng.Count <> 1 Then _
         Err.Raise -1, , "Выберите один объект на слайде"
     Set old_obj = rng(1)
