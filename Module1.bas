@@ -69,8 +69,9 @@ Public Sub send_via_outlook()
         Dim cnt As Long
         cnt = ActiveWindow.Selection.SlideRange.Count
         If cnt < ActiveWindow.Presentation.Slides.Count Then
-            MsgBox "Будут отправлены выделенные слайды: " & cnt, vbInformation
-            Call send_selected_via_outlook
+            If MsgBox("Будут отправлены выделенные слайды: " & cnt, _
+                      vbInformation + vbOKCancel) = vbOK Then _
+                Call send_selected_via_outlook
             Exit Sub
         End If
     End If
