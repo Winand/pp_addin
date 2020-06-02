@@ -69,11 +69,17 @@ Public Sub send_via_outlook()
         Dim slide_rng As SlideRange
         Set slide_rng = ActiveWindow.Selection.SlideRange
         If slide_rng.Count < ActiveWindow.Presentation.Slides.Count Then
-            If MsgBox("Будут отправлены выделенные слайды (" & _
-                      slide_rng.Count & "):" & vbCrLf & to_text_range(slide_rng), _
-                      vbInformation + vbOKCancel) = vbOK Then _
+            Select Case _
+                MsgBox("Отправить только выделенные слайды (" & slide_rng.Count & ")?" & _
+                       vbCrLf & "Номера выбранных слайдов: " & to_text_range(slide_rng), _
+                       vbInformation + vbYesNoCancel)
+            Case vbYes:
                 Call send_selected_via_outlook
-            Exit Sub
+                Exit Sub
+            Case vbNo: 'Continue
+            Case vbCancel:
+                Exit Sub
+            End Select
         End If
     End If
     Dim tmp_file_path
