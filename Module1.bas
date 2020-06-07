@@ -70,8 +70,8 @@ Public Sub send_via_outlook()
         Set slide_rng = ActiveWindow.Selection.SlideRange
         If slide_rng.Count < ActiveWindow.Presentation.Slides.Count Then
             Select Case _
-                MsgBox("Отправить только выделенные слайды (" & slide_rng.Count & ")?" & _
-                       vbCrLf & "Номера выбранных слайдов: " & to_text_range(slide_rng), _
+                MsgBox(fmt(tr("Send only selected slides (%s)?\nSelected slides numbers: %s"), _
+                           slide_rng.Count, to_text_range(slide_rng)), _
                        vbInformation + vbYesNoCancel)
             Case vbYes:
                 Call send_selected_via_outlook
@@ -193,8 +193,8 @@ Sub remove_unused_designs()
     Dim result
     If is_protected_view Then Exit Sub
     result = remove_unused_designs__internal(ActivePresentation)
-    MsgBox "Удалено неиспользуемых тем (с образцами слайдов): " & result(0) & vbCrLf & _
-           "Удалено неиспользуемых образцов слайдов: " & result(1), vbInformation
+    MsgBox fmt(tr("Removed unused designs (with templates): %s\nRemoved unused templates: %s"), _
+               result(0), result(1)), vbInformation
 End Sub
 
 Function chartTemplatesFolder() As String
@@ -478,9 +478,9 @@ On Error GoTo err__paste_and_replace_shape:
     Dim rng As ShapeRange, old_obj As Shape, new_obj As Shape, is_emb_selection As Boolean
     Set rng = selected_shapes(is_emb_selection)
     If is_emb_selection Then _
-        Err.Raise -1, , "Не удалось определить выделение: объекты внутри диаграмм не поддерживаются"
+        Err.Raise -1, , tr("Failed to identify selection: objects embedded in charts are not supported")
     If rng.Count <> 1 Then _
-        Err.Raise -1, , "Выберите один объект на слайде"
+        Err.Raise -1, , tr("Select one object on slide")
     Set old_obj = rng(1)
     Set rng = paste_source_formatting()
     If rng.Count = 0 Then _
@@ -489,7 +489,7 @@ On Error GoTo err__paste_and_replace_shape:
     If rng.Count > 1 Then
         rng.Delete
         old_obj.Select 'If text is pasted focus is set on it
-        Err.Raise -1, , "В буфере обмена должен находиться один объект"
+        Err.Raise -1, , tr("More than one object is found in clipboard")
     End If
     copyPos old_obj, new_obj
     setZOrder new_obj, old_obj.ZOrderPosition

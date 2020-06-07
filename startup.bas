@@ -24,23 +24,24 @@ End Function
 
 Sub Auto_Open()
     Dim bar As CommandBar, b As CommandBarButton
+    Call init_messages 'Init translation
     Call Auto_Close
     Set bar = CommandBars.Add(barId, Temporary:=True)
 
     Set b = bar.Controls.Add(msoControlButton)
-    b.Caption = "Внедрить данные"
+    b.Caption = tr("Embed data")
     b.OnAction = project_name & "!chartDataRecover"
     b.Style = msoButtonIconAndCaption
     b.FaceId = 17
 
     Set b = bar.Controls.Add(msoControlButton)
-    b.Caption = "Разорвать связи"
+    b.Caption = tr("Break links")
     b.OnAction = project_name & "!chartBreakLinks"
     b.Style = msoButtonIconAndCaption
     b.FaceId = 1088
 
     Set b = bar.Controls.Add(msoControlButton)
-    b.Caption = "Очистить темы"
+    b.Caption = tr("Clean designs")
     b.OnAction = project_name & "!remove_unused_designs"
     b.Style = msoButtonIconAndCaption
     b.FaceId = 47
@@ -53,13 +54,13 @@ Sub Auto_Open()
 '    b.FaceId = 24
 
     Set b = bar.Controls.Add(msoControlButton)
-    b.Caption = "Отправить"
+    b.Caption = tr("Send")
     b.OnAction = project_name & "!send_via_outlook"
     b.Style = msoButtonIconAndCaption
     b.FaceId = 24
 
     Set b = bar.Controls.Add(msoControlButton)
-    b.Caption = "Вставить с заменой"
+    b.Caption = tr("Paste && replace")
     b.OnAction = project_name & "!paste_and_replace_shape"
     b.Style = msoButtonIconAndCaption
     b.FaceId = 4873
