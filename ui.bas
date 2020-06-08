@@ -8,7 +8,7 @@ Public Sub init_messages()
         msgs("Break links") = "Разорвать связи"
         msgs("Clean designs") = "Очистить темы"
         msgs("Send") = "Отправить"
-        msgs("Paste & replace") = "Вставить с заменой"
+        msgs("Paste && replace") = "Вставить с заменой"
         msgs("Send only selected slides (%s)?\nSelected slides numbers: %s") = _
              "Отправить только выделенные слайды (%s)?\nНомера выбранных слайдов: %s"
         msgs("Removed unused designs (with templates): %s\nRemoved unused templates: %s") = _
